@@ -9,7 +9,7 @@
     (Integer. (str/join (concat (first digits) (last digits))))))
 
 (defn calculate [lines]
-  (reduce + (map parse_digits lines)))
+  (reduce + (map parse-digits lines)))
 
 (defn solve1 [file]
   (with-open [rdr (reader file)] 
