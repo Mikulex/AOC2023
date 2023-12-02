@@ -40,6 +40,18 @@
       (reduce + v)
       )))
 
+(defn solve2
+  [file]
+  (with-open [rdr (reader file)] 
+    (->> (doall (line-seq rdr))
+      (map parse-game)
+      (map :subsets)
+      (map (fn [subset] (reduce #(merge-with max %1 %2) {} subset) ))
+      (map vals) 
+      (map #(apply * %))
+      (apply +)
+      )))
+
 (solve1 demo_input_file)
 (solve1 real_input_file)
 
