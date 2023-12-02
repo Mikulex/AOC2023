@@ -1,9 +1,9 @@
-(ns solution)
+(ns day01)
 (require '[clojure.string :as str])
 (use 'clojure.java.io)
-(def demo_input_file (str (System/getProperty "user.dir") "/" "demo.txt"))
-(def demo2_input_file (str (System/getProperty "user.dir") "/" "demo2.txt"))
-(def real_input_file (str (System/getProperty "user.dir") "/" "input.txt"))
+(def demo_input_file (str (System/getProperty "user.dir") "/inputs/day01/" "demo.txt"))
+(def demo2_input_file (str (System/getProperty "user.dir") "/inputs/day01/" "demo2.txt"))
+(def real_input_file (str (System/getProperty "user.dir") "/inputs/day01/" "input.txt"))
 (def digit-map {"one" "1" "two" "2" "three" "3" "four" "4" "five" "5" "six" "6" "seven" "7" "eight" "8" "nine" "9"})
 
 (defn parse-digit-literal 
