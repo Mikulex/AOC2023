@@ -25,7 +25,33 @@
          (map count)
          (map #(.pow 2M (dec %)))
          (reduce +))))
-        
+
+(defn update-copies
+  [wins copies]
+  (let [amount (first copies)]
+    (map-indexed (fn [idx current] 
+                   (if (< idx wins)
+                     (+ amount current)
+                     current))
+                 (rest copies))))
+
+(defn solve2
+  [file]
+  (let [lines (str/split (slurp file) #"\n")]
+    (let [wins (->> (map parse-game lines)
+                    (map #(apply set/intersection %))
+                    (map count))]
+      (loop [remaining wins
+             copies (repeat (count wins) 1)
+             sum 0]
+        (if (empty? remaining)
+          sum
+          (recur 
+            (rest remaining) 
+            (update-copies (first remaining) copies)
+            (+ sum (first copies))))))))
+
+
 (solve1 demo_input_file)
 (solve1 real_input_file)
 
