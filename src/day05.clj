@@ -16,27 +16,23 @@
 
 (defn parse-seeds
   [line]
-  (map parse-long 
-       (filter not-empty 
-               (str/split (re-find #"[\s\d]+" line) #" "))))
+  (map parse-long (filter not-empty (str/split (re-find #"[\s\d]+" line) #" "))))
 
 (defn parse-input 
   [lines]
-  (map-indexed 
-      (fn [idx line]
-        (if (= idx 0)
-          (parse-seeds line)
-          (parse-map-sorted line)))
-      lines))
+  (map-indexed (fn [idx line]
+                 (if (= idx 0)
+                   (parse-seeds line)
+                   (parse-map-sorted line)))
+               lines))
 
 (defn correct-mapping
   [mappings seed]
-  (first 
-    (filter (fn [mapping]
-              (let [[d s r] mapping]
-                (and (> (+ s r) seed)
-                     (<= s seed))))
-            mappings)))
+  (first (filter (fn [mapping]
+                   (let [[_ s r] mapping]
+                     (and (> (+ s r) seed)
+                          (<= s seed))))
+                 mappings)))
 
 (defn pass-through 
   [mappings seed]
@@ -50,17 +46,51 @@
   [file]
   (let [lines (str/split (slurp file) #"\n\n")
         [seeds & maps] (parse-input lines)]
-    (apply min (loop [remaining maps
-           values seeds]
-      (if (empty? remaining)
-        values
-        (recur (rest remaining)
-               (map #(pass-through (first remaining) %) values)))))))
+    (apply min 
+           (loop [remaining maps
+                  values seeds]
+             (if (empty? remaining)
+               values
+               (recur (rest remaining)
+                      (map #(pass-through (first remaining) %) values)))))))
+
+(defn pass-through-ranges 
+  "Check for overlaps between mappings and a seed range, split seed-ranges accordingly, 
+  update seed ranges affected by mappings and return a list of seed ranges"
+  [mappings seed-range]
+  (loop [remaining mappings
+         mapped-vals []
+         [idx offset] seed-range]
+    (let [[d s r] (first remaining)]
+      (cond
+        (nil? s) (conj mapped-vals [idx offset])
+        (= offset 0) mapped-vals
+        (<= (+ idx offset) s) (conj mapped-vals [idx offset])
+        (>= idx (+ s r)) (recur (rest remaining)
+                                mapped-vals
+                                [idx offset])
+        (and (>= idx s) (<= (+ idx offset) (+ s r))) (conj mapped-vals [(+ d (- idx s)) offset])
+        (< idx s) (recur remaining
+                         (conj mapped-vals [idx (- s idx)])
+                         [s (- offset (- s idx))])
+        :else (recur (rest remaining)
+                     (conj mapped-vals [(+ d (- r (- (+ s r) idx))) (- (+ s r) idx)])
+                     [(+ s r) (- offset (- (+ s r) idx))])))))
 
 (defn solve2
   [file]
-  (let [lines (str/split (slurp file) #"\n")]
-    lines))
+  (let [lines (str/split (slurp file) #"\n\n")
+        [seed-ranges & maps] (parse-input lines)
+        seeds (partition 2 seed-ranges)]
+    (apply min (map first 
+                    (loop [remaining maps
+                           values seeds]
+                      (if (empty? remaining)
+                        values
+                        (recur (rest remaining)
+                               (mapcat #(pass-through-ranges (first remaining) %) values))))))))
+
+(mapcat #(vec [% %]) [1 2 3])
 
 (solve1 demo_input_file)
 (solve1 real_input_file)
