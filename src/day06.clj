@@ -13,6 +13,14 @@
                               (map #(map parse-long %)))]
     (map vector times distances)))
 
+(defn parse-as-single-race
+  [lines]
+  (->> (map #(re-find #"[\d\s]+" %) lines)
+                              (map #(str/split % #"\s+"))
+                              (map #(filter not-empty %))
+                              (map str/join)
+                              (map parse-long)))
+
 (defn get-possible-wins 
   [[t d]]
   (filter #(> % d) 
@@ -26,7 +34,8 @@
 
 (defn solve2
   [file]
-  (let [lines (str/split (slurp file) #"\n")
+  (let [lines (str/split (slurp file) #"\n")]
+        (count (get-possible-wins (parse-as-single-race lines)))))
 
 (solve1 demo_input_file)
 (solve1 real_input_file)
@@ -34,5 +43,3 @@
 (solve2 demo_input_file)
 (solve2 real_input_file)
 
-
-(map + [1 2 3] [4 5 6])
