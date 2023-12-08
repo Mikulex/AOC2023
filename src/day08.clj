@@ -3,33 +3,50 @@
 (require '[clojure.string :as str])
 (require '[clojure.set :as set])
 (def demo_input_file (str (System/getProperty "user.dir") "/inputs/day08/" "demo.txt"))
+(def demo_input2_file (str (System/getProperty "user.dir") "/inputs/day08/" "demo2.txt"))
+(def demo_input3_file (str (System/getProperty "user.dir") "/inputs/day08/" "demo3.txt"))
 (def real_input_file (str (System/getProperty "user.dir") "/inputs/day08/" "input.txt"))
-(doc partition)
 
 (defn solve1 
   [file]
   (let [lines (filter not-empty (str/split (slurp file) #"\n"))
-        directions (flatten (repeat (into [] (first lines))))
+        directions (into [] (first lines))
         mappings (into {} (map (fn [[node & roads]] [node roads] ) (map #(re-seq #"[A-Z]{3}" %) (rest lines))))]
     (loop [idx 0
            location "AAA"]
-      (let [direction (nth directions idx)
+      (let [direction (nth directions (mod idx (count directions)))
             options (get mappings location)]
-      (if (= location "ZZZ")
-        idx
-    (recur (inc idx) (if (= direction \L) (first options) (last options))))))))
+        (if (= location "ZZZ")
+          idx
+          (recur (inc idx) (if (= direction \L) (first options) (last options))))))))
+
+(defn update-locations 
+  [locations
+   mappings
+   directions]
+  (for [location locations]
+    (let [[start-location start-idx] location]
+      (loop [idx start-idx
+             location start-location]
+        (if (= \Z (last location))
+          [location idx]
+          (let [direction (nth directions (mod idx (count directions)))]
+            (if (= \L direction)
+              (recur (inc idx) (first (get mappings location)))
+              (recur (inc idx) (last (get mappings location))))))))))
 
 (defn solve2
   [file]
   (let [lines (filter not-empty (str/split (slurp file) #"\n"))
-        directions (flatten (repeat (into [] (first lines))))
-        mappings (into {} (map (fn [[node & roads]] [node roads] ) (map #(re-seq #"[A-Z]{3}" %) (rest lines))))
-        start-nodes (filter #(= \A (last %)) (map first mappings))]
-    start-nodes))
+        directions (into [] (first lines))
+        mappings (into {} (map (fn [[node & roads]] [node roads] ) (map #(re-seq #"[A-Z1-9]{3}" %) (rest lines))))
+        start-nodes (map vector (filter #(= \A (last %)) (map first mappings)) (repeat 0))]
+    (prn start-nodes)
+    (update-locations (update-locations start-nodes mappings directions) mappings directions)))
 
-     
 (solve1 demo_input_file)
+(solve1 demo_input2_file)
 (solve1 real_input_file)
 
-(solve2 demo_input_file)
-(solve2 real_input_file)
+(solve2 demo_input3_file)
+(time (solve2 real_input_file))
