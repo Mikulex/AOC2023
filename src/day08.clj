@@ -20,7 +20,7 @@
           idx
           (recur (inc idx) (if (= direction \L) (first options) (last options))))))))
 
-(defn update-locations 
+(defn first-end-nodes
   [locations
    mappings
    directions]
@@ -35,14 +35,21 @@
               (recur (inc idx) (first (get mappings location)))
               (recur (inc idx) (last (get mappings location))))))))))
 
+(defn lcm
+  [numbers]
+  (let [max-num (apply max numbers)]
+    (loop [n 2]
+      (let [mult (* n max-num)]
+        (if (every? zero? (map #(mod mult %) numbers))
+                    mult
+                    (recur (inc n)))))))
 (defn solve2
   [file]
   (let [lines (filter not-empty (str/split (slurp file) #"\n"))
         directions (into [] (first lines))
         mappings (into {} (map (fn [[node & roads]] [node roads] ) (map #(re-seq #"[A-Z1-9]{3}" %) (rest lines))))
         start-nodes (map vector (filter #(= \A (last %)) (map first mappings)) (repeat 0))]
-    (prn start-nodes)
-    (update-locations (update-locations start-nodes mappings directions) mappings directions)))
+    (lcm (map last (first-end-nodes start-nodes mappings directions)))))
 
 (solve1 demo_input_file)
 (solve1 demo_input2_file)

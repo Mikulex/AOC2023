@@ -92,6 +92,9 @@
 
 (mapcat #(vec [% %]) [1 2 3])
 
+(defn amogus [b] (fn [a] (+ a b)))
+((amogus 5) 1)
+
 (solve1 demo_input_file)
 (solve1 real_input_file)
 
