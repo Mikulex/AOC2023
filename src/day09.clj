@@ -4,12 +4,17 @@
 (require '[clojure.set :as set])
 (def demo_input_file (str (System/getProperty "user.dir") "/inputs/day09/" "demo.txt"))
 (def real_input_file (str (System/getProperty "user.dir") "/inputs/day09/" "input.txt"))
-(declare sub-numseqs next-subseq next-number)
+(declare sub-numseqs next-subseq next-number previous-number)
 
 (defn solve1 
   [file]
   (let [lines (map #(map parse-long %) (map #(str/split % #" ") (str/split (slurp file) #"\n")))]
     (reduce + (map next-number (map sub-numseqs lines)))))
+
+(defn solve2
+  [file]
+  (let [lines (map #(map parse-long %) (map #(str/split % #" ") (str/split (slurp file) #"\n")))]
+    (reduce + (map previous-number (map sub-numseqs lines)))))
 
 (defn sub-numseqs
   [numseq]
@@ -22,14 +27,15 @@
 
 (defn next-subseq
   [numseq]
-  (loop [currentseq numseq
-         result []]
-    (if (or (empty? currentseq) (= (count currentseq) 1)) result
-      (recur (rest currentseq) (conj result (- (second currentseq) (first currentseq)))))))
+  (map #(- (second %) (first %)) (partition 2 1 numseq)))
 
 (defn next-number
   [sub-numseqs]
-  (reduce + (map first (map reverse sub-numseqs))))
+  (reduce + (map last sub-numseqs)))
+
+(defn previous-number
+  [sub-numseqs]
+  (reduce #(- %2 %1) (reverse (map first sub-numseqs))))
 
 (solve1 demo_input_file)
 (solve1 real_input_file)
