@@ -2,11 +2,14 @@
   (:require clojure.repl) 
   (:require
     [clojure.string :as str]))
-(require '[clojure.set :as set])
 (def demo_input_file (str (System/getProperty "user.dir") "/inputs/day10/" "demo.txt"))
 (def demo_input_file2 (str (System/getProperty "user.dir") "/inputs/day10/" "demo2.txt"))
 (def real_input_file (str (System/getProperty "user.dir") "/inputs/day10/" "input.txt"))
-(declare surrounding-pipes surrounding-pipes-init valid-connection? pipe-loop)
+(declare surrounding-pipes
+         surrounding-pipes-init 
+         valid-connection? 
+         pipe-loop 
+         shoelace)
 
 (defrecord pipeinfo [coord pipe])
 
@@ -22,60 +25,48 @@
    :right :left
    :down :up})
 
+(defn find-start [lines]
+  (as-> (map-indexed #(vector %1 (str/index-of %2 "S")) lines) l
+    (filter #(number? (second %)) l )
+    (flatten l)
+    (->pipeinfo l \S)))
+
 (defn solve1 
   [file]
   (let [lines (str/split (slurp file) #"\n")
-        loop-start (->pipeinfo (flatten (filter #(number? (second %)) (map-indexed #(vector %1 (str/index-of %2 "S")) lines))) \S)]
+        loop-start (find-start lines)]
     (/ (count (pipe-loop loop-start lines)) 2)))
 
 (defn solve2
   [file]
   (let [lines (str/split (slurp file) #"\n")
-        loop-start (->pipeinfo (flatten (filter #(number? (second %)) (map-indexed #(vector %1 (str/index-of %2 "S")) lines))) \S)
-        loop-pipes (pipe-loop loop-start lines)
-        max-x (count lines)
-        max-y (count (first lines))]
-    (loop [current-location (->pipeinfo [0 0] (get-in lines [0 0]))
-           current-area []
-           visited #{}
-           enclosed []
-           other-areas []
-           next-locations []
-           not-visited-coords (remove #(contains? loop-pipes %) (into #{} (for [a (range max-x) b (range max-y)] (->pipeinfo [a b] (get-in lines [a b])))))
-           is-enclosed? true]
-      (prn current-location)
-      (if (empty? next-locations)
-        (if (empty? not-visited-coords) 
-          [enclosed other-areas]
-          (recur 
-            (first not-visited-coords) 
-            []
-            (conj visited current-location)
-            (if is-enclosed? (concat current-area enclosed) enclosed)
-            (if is-enclosed?  other-areas (concat current-area other-areas))
-            next-locations 
-            (remove #(= current-location %) not-visited-coords)
-            true))
-        (recur 
-          (first next-locations)
-          (conj current-area current-location)
-          (conj visited current-location)
-          enclosed
-          other-areas
-          (rest (conj next-locations (filter #(nil? (:pipe %)) (surrounding-pipes-init current-location lines))))
-          (remove #(= not-visited-coords %) current-location)
-          (not (or (= (first current-location) 0)
-                   (= (second current-location) 0)
-                   (= (first current-location) (dec max-x))
-                   (= (second current-location) (dec max-y)))))))))
+        loop-start (find-start lines)
+        pipes (pipe-loop loop-start lines)]
+    (- (shoelace pipes) (dec (/ (count pipes) 2)))))
+
+(defn shoelace
+  "Calculates the area based on Gauss' Shoelace formula. Will also include area of the pipes themselves"
+  [pipes]
+  (abs (/ (loop [remaining (conj (mapv :coord pipes) (:coord (first pipes)))
+                 sum 0]
+            (if (<= (count remaining) 1) sum
+              (let [[fx fy] (first remaining)
+                    [sx sy] (second remaining)]
+                (recur (rest remaining) (+ sum (- (* fx sy) (* fy sx)))))))
+          2)))
+
+(defn filter-pipes
+  [visited pipes]
+  (filter (fn [found-pipe] (not (some #(= found-pipe %) visited)))
+          pipes))
 
 (defn pipe-loop
   [loop-start 
    lines]
   (loop [pipe loop-start
-         visited (hash-set loop-start)]
-    (let [pipes (set/difference (surrounding-pipes pipe lines) visited)]
-      (if (set/subset? pipes visited)
+         visited (vector loop-start)]
+    (let [pipes (filter-pipes visited (surrounding-pipes pipe lines))]
+      (if (empty? pipes)
         visited
         (recur (first pipes) (conj visited (first pipes)))))))
 
@@ -84,20 +75,23 @@
                       [x y]))
 
 (defn surrounding-pipes
+  "Collects surrounding pipes and only returns those that would are actually connected"
   [location lines]
   (into #{} (map first 
-                 (filter #(valid-connection? %1 location)
+                 (filter (fn [direction] (valid-connection? direction location))
                          (map vector 
                               (surrounding-pipes-init location lines) 
                               [:up :left :right :down])))))
 
 (defn surrounding-pipes-init
+  "Collects the raw surrounding pipes"
   [location lines]
   (for [offset window-offsets]
     (let [coords (map + (:coord location) offset)] 
       (->pipeinfo coords (get-in lines coords)))))
 
 (defn valid-connection?
+  "Checks if there is an entry for the pipe we walk to and an exit for the pipe we are currently in"
   [[to-pipe direction] current-pipe]
   (and (contains? (direction pipe-to-dir) (:pipe to-pipe))
        (contains? ((direction opposite) pipe-to-dir) (:pipe current-pipe))))
