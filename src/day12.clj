@@ -7,7 +7,7 @@
 
 (defn parse-lines
   [lines]
-  (->> (map #(filter not-empty (str/split % #"[\s.]")) lines)
+  (->> (map #(filter not-empty (str/split % #"[\s]")) lines)
        (map #(split-at (dec (count %)) %))
        (map #(vector (str/join "." (first %)) (map parse-long (str/split (first (second %)) #","))))))
 
@@ -39,12 +39,18 @@
   (let [lines (parse-lines (str/split (slurp file) #"\n"))]
     (reduce + (map #(line-solve (first %1) (second %1) (= (first %) \#)) lines))))
 
+(defn- repeated-lines [lines]
+  (map #(vector (str/join "?" (repeat 5 (first %))) (apply concat (repeat 5 (second %)))) lines))
+
 (defn solve2
   [file]
-  (let [lines (str/split (slurp file) #"\n")]))
+  (let [lines (repeated-lines (parse-lines (str/split (slurp file) #"\n")))]
+    (reduce + (pmap #(do 
+                      (println "solved" (first %1))
+                      (line-solve (first %1) (second %1) (= (first %) \#))) lines))))
 
 (solve1 demo_input_file)
 (solve1 real_input_file)
 
 (solve2 demo_input_file)
-(solve2 real_input_file)
+(time (solve2 real_input_file))
