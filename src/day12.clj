@@ -13,11 +13,9 @@
 
 (defn replace-first [s c] ( str/replace-first s #"." (str c)))
 
-(defn line-solve
-  [pattern number running]
-  (loop [p pattern 
-         n number
-         r running]
+
+(def line-solve
+  (memoize (fn [p n r]
     (let [numbers-left (> (reduce + n) 0)
           chars-left (not (nil? (first p)))]
       (cond 
@@ -31,8 +29,7 @@
         (and (= (first p) \.) (= (first n) 0)) (recur (subs p 1 (count p)) (rest n) false)
         (= (first p) \.) (recur (subs p 1 (count p)) n false)
         (= (first p) \?) (+ (line-solve (replace-first p \#) n true) (line-solve (replace-first p \.) n r))
-        :else (prn "unmatched case!" p n)))))
-
+        :else (prn "unmatched case!" p n))))))
 
 (defn solve1 
   [file]
@@ -45,9 +42,7 @@
 (defn solve2
   [file]
   (let [lines (repeated-lines (parse-lines (str/split (slurp file) #"\n")))]
-    (reduce + (pmap #(do 
-                      (println "solved" (first %1))
-                      (line-solve (first %1) (second %1) (= (first %) \#))) lines))))
+    (reduce + (pmap #(line-solve (first %1) (second %1) (= (first %) \#)) lines))))
 
 (solve1 demo_input_file)
 (solve1 real_input_file)
